@@ -6,6 +6,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 
 import com.twilio.Twilio;
@@ -32,7 +35,7 @@ public class SendAndReceiveSms implements SendSmsService {
     System.out.println("\n great there-twilio");
   }
 
-  public static void parseDirectionsResponse(String origin, String destination) throws IOException {
+  public static void getDirectionsResponse(String origin, String destination) throws IOException {
 
     origin = origin.replaceAll("\\s+","+");
     destination = destination.replaceAll("\\s+","+");
@@ -51,15 +54,35 @@ public class SendAndReceiveSms implements SendSmsService {
         response.append(inputLine);
       }
       in.close();
-
-      System.out.println(response.toString());
+      JSONObject json = new JSONObject(response.toString());
+      JSONArray bundlesArray = json.getJSONArray("routes");
+      JSONObject routeJson =  bundlesArray.getJSONObject(0);
+      JSONArray legs = routeJson.getJSONArray("legs");
+      JSONObject legsJson = legs.getJSONObject(0);
+      JSONArray steps = legsJson.getJSONArray("steps");
+      processJsonData(steps);
+//      System.out.println(response.toString());
     } else {
-      System.out.println("GET request not worked");
+      System.out.println("invalid GET request");
     }
 
   }
 
+  private static void processJsonData(JSONArray stepData){
+    JSONObject stepJson;
+    StringBuilder html_instructions = new StringBuilder();
+    for(int i =0 ; i< stepData.length(); i++){
+      stepJson = stepData.getJSONObject(i);
+      html_instructions.append(html2text(stepJson.get("html_instructions").toString())).append("\n");
+    }
+    System.out.println(html_instructions);
+  }
+
+  public static String html2text(String html) {
+    return Jsoup.parse(html).text();
+  }
+
   public static void main(String[] args) throws IOException {
-    parseDirectionsResponse("coviam B block","The Hsr Club sector 3");
+    getDirectionsResponse("coviam B block","The Hsr Club sector 3");
   }
 }
