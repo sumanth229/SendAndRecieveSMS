@@ -28,11 +28,8 @@ import com.twilio.twiml.MessagingResponse;
 @Service
 @Slf4j
 public class SendAndReceiveSms implements SendSmsService {
-  public static final String ACCOUNT_SID = "AC70707777b0938f34a5815ba609cad736";
-  public static final String AUTH_TOKEN = "a6dcac7cfe27284fbf5e6618216a4c73";
-
-  public static final String SH_ACCOUNT_SID = "AC169fdaa726b323a61d9f27f05605aa44";
-  public static final String SH_AUTH_TOKEN = "89424c9ca7c40ce793937a2364eb1dd2";
+  public static final String ACCOUNT_SID = "ACCOUNT_SID";
+  public static final String AUTH_TOKEN = "AUTH_TOKEN";
 
 
   public static String getDirectionsResponse(String origin, String destination) throws IOException {
@@ -42,7 +39,7 @@ public class SendAndReceiveSms implements SendSmsService {
     origin = origin.replaceAll("\\s+", "+");
     destination = destination.replaceAll("\\s+", "+");
     URL url = new URL(
-        "https://maps.googleapis.com/maps/api/directions/json?origin=" + origin + "&destination=" +
+        "directionsAPi : origin=" + origin + "&destination=" +
             destination);
     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
     connection.setRequestMethod("GET");
@@ -57,16 +54,19 @@ public class SendAndReceiveSms implements SendSmsService {
       }
       in.close();
       JSONObject json = new JSONObject(response.toString());
+      String status = json.get("status").toString();
+      if (status.equals("OK")) {
       JSONArray bundlesArray = json.getJSONArray("routes");
       JSONObject routeJson = bundlesArray.getJSONObject(0);
       JSONArray legs = routeJson.getJSONArray("legs");
       JSONObject legsJson = legs.getJSONObject(0);
       JSONArray steps = legsJson.getJSONArray("steps");
       return processJsonData(steps);
-    } else {
-      System.out.println("invalid GET request");
+      } else {
+        return "Sorry, Cannot find route!";
+      }
     }
-    return null;
+      return "invalid request";
   }
 
   private static String processJsonData(JSONArray stepData) throws IOException {
@@ -93,7 +93,7 @@ public class SendAndReceiveSms implements SendSmsService {
     from = from.substring(3);
     from = ("+" + from).trim();
     com.twilio.rest.api.v2010.account.Message message = com.twilio.rest.api.v2010.account.Message
-        .creator(new PhoneNumber("+918218536877"), new PhoneNumber("+12569527928"), htmlBody.substring(0,130))
+        .creator(new PhoneNumber("+918218536877"), new PhoneNumber("+12569527928"), htmlBody.substring(0,100))
         .create();
     System.out.println(from.trim());
     System.out.println(body.toString());
